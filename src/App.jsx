@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AppProvider } from './context/AppContext';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/" element={<RouteGuard><Navigate to="/instructor" replace /></RouteGuard>} />
             <Route path="*" element={<RouteGuard><Navigate to="/instructor" replace /></RouteGuard>} />
           </Routes>
+          <Analytics />
         </BrowserRouter>
       </AppProvider>
     </AuthProvider>
