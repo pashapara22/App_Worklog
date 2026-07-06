@@ -71,8 +71,35 @@ export function AuthProvider({ children }) {
         }
       }
     };
+
+    // Also re-read localStorage when this tab regains focus (covers same-tab navigations
+    // and cases where the storage event doesn't fire, e.g. same-origin iframes)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const stored = localStorage.getItem('worklog_users');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            setRegisteredUsers(prev => {
+              // Only update if the data actually changed to avoid unnecessary re-renders
+              if (JSON.stringify(prev) !== stored) {
+                return parsed;
+              }
+              return prev;
+            });
+          }
+        } catch (err) {
+          console.error("Failed to re-read worklog_users on focus", err);
+        }
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const isAuthenticated = !!currentUser;
