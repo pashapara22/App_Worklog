@@ -211,7 +211,7 @@ export function AppProvider({ children }) {
     let submitted = 0;
     let pending = 0;
 
-    const activeInstructors = INSTRUCTORS.filter(i => i.role !== 'admin' && i.employeeId !== 'A0000');
+    const activeInstructors = INSTRUCTORS.filter(i => i.id !== 'admin-1');
 
     activeInstructors.forEach(inst => {
       if (submissions[inst.id]?.[today]?.isSubmitted) {
@@ -228,7 +228,7 @@ export function AppProvider({ children }) {
   const getAdminAnalytics = useCallback((startDate, endDate, instructorIdFilter = 'all') => {
     try {
       const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
-      const activeInstructors = INSTRUCTORS.filter(i => i.employeeId !== 'A0000');
+      const activeInstructors = INSTRUCTORS.filter(i => i.id !== 'admin-1');
       const targetInstructors = instructorIdFilter === 'all' 
         ? activeInstructors 
         : activeInstructors.filter(i => i.id === instructorIdFilter);

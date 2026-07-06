@@ -32,12 +32,12 @@ export const DEFAULT_TIME_CONFIG = {
 };
 
 export const INSTRUCTORS = [
-  { id: 'admin-1', name: 'System Admin', email: 'admin@institute.edu', avatar: 'AD', department: 'Administration', employeeId: 'A0000' },
-  { id: 'inst-1', name: 'Dr. Sarah Johnson', email: 'sarah.j@institute.edu', avatar: 'SJ', department: 'Computer Science', employeeId: 'I0001' },
-  { id: 'inst-2', name: 'Prof. Michael Chen', email: 'michael.c@institute.edu', avatar: 'MC', department: 'Mathematics', employeeId: 'I0002' },
-  { id: 'inst-3', name: 'Dr. Emily Rodriguez', email: 'emily.r@institute.edu', avatar: 'ER', department: 'Physics', employeeId: 'I0003' },
-  { id: 'inst-4', name: 'Prof. David Kim', email: 'david.k@institute.edu', avatar: 'DK', department: 'Engineering', employeeId: 'I0004' },
-  { id: 'inst-5', name: 'Dr. Lisa Patel', email: 'lisa.p@institute.edu', avatar: 'LP', department: 'Biology', employeeId: 'I0005' },
+  { id: 'admin-1', name: 'System Admin', email: 'admin@institute.edu', avatar: 'AD', department: 'Administration', employeeId: 'NW2000001' },
+  { id: 'inst-1', name: 'Dr. Sarah Johnson', email: 'sarah.j@institute.edu', avatar: 'SJ', department: 'Computer Science', employeeId: 'NW2000563' },
+  { id: 'inst-2', name: 'Prof. Michael Chen', email: 'michael.c@institute.edu', avatar: 'MC', department: 'Mathematics', employeeId: 'NW2000128' },
+  { id: 'inst-3', name: 'Dr. Emily Rodriguez', email: 'emily.r@institute.edu', avatar: 'ER', department: 'Physics', employeeId: 'NW2000347' },
+  { id: 'inst-4', name: 'Prof. David Kim', email: 'david.k@institute.edu', avatar: 'DK', department: 'Engineering', employeeId: 'NW2000891' },
+  { id: 'inst-5', name: 'Dr. Lisa Patel', email: 'lisa.p@institute.edu', avatar: 'LP', department: 'Biology', employeeId: 'NW2000045' },
 ];
 
 export function formatTime(h, m) {

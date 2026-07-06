@@ -15,8 +15,8 @@ import { useAuth } from '../context/AuthContext';
 export default function Sidebar({ collapsed, setCollapsed }) {
   const { currentUser, logout, registeredUsers } = useAuth();
   
-  // Calculate pending users for the badge
-  const pendingCount = registeredUsers.filter(u => u.status === 'pending').length;
+  // Calculate pending users for the badge (only instructors for the admin view)
+  const pendingCount = registeredUsers.filter(u => u.status === 'pending' && u.role === 'instructor').length;
 
   const instructorLinks = [
     { to: '/instructor', icon: LayoutDashboard, label: 'Dashboard', end: true },

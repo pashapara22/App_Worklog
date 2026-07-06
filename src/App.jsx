@@ -11,6 +11,17 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import CategoryManager from './pages/admin/CategoryManager';
 import TimeSlotSettings from './pages/admin/TimeSlotSettings';
 import AccessRequests from './pages/admin/AccessRequests';
+import OverviewLogin from './pages/overview/OverviewLogin';
+import OverviewDashboard from './pages/overview/OverviewDashboard';
+
+// Guard for Overview dashboard (session-based access)
+function OverviewGuard({ children }) {
+  const hasAccess = sessionStorage.getItem('overview_access') === 'granted';
+  if (!hasAccess) {
+    return <Navigate to="/overview/login" replace />;
+  }
+  return children;
+}
 
 export default function App() {
   return (
@@ -21,6 +32,10 @@ export default function App() {
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignUpPage />} />
+
+            {/* Overview Routes (session-gated) */}
+            <Route path="/overview/login" element={<OverviewLogin />} />
+            <Route path="/overview" element={<OverviewGuard><OverviewDashboard /></OverviewGuard>} />
 
             {/* Protected Routes */}
             <Route path="/instructor" element={<RouteGuard requireRole="instructor"><Layout /></RouteGuard>}>

@@ -23,7 +23,7 @@ export default function AdminDashboard() {
   const [customStart, setCustomStart] = useState(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
   const [customEnd, setCustomEnd] = useState(format(new Date(), 'yyyy-MM-dd'));
 
-  const activeInstructors = instructors.filter(i => i.role !== 'admin' && i.employeeId !== 'A0000');
+  const activeInstructors = instructors.filter(i => i.role !== 'admin' && i.id !== 'admin-1');
 
   // Compute actual start/end based on dropdown
   const { startDate, endDate } = useMemo(() => {

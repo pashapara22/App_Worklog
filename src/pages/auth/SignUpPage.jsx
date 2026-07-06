@@ -1,20 +1,39 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { UserPlus, BookOpen, AlertCircle, ArrowLeft, Check, X, Clock } from 'lucide-react';
+import { UserPlus, BookOpen, AlertCircle, ArrowLeft, Check, X, Clock, Eye, EyeOff, User, Shield } from 'lucide-react';
 
-const EMPLOYEE_ID_REGEX = /^I\d{4}$/;
+const EMPLOYEE_ID_REGEX = /^NW\d{7}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const PASSWORD_RULES = [
+  { id: 'minLength', label: 'At least 8 characters', test: (pw) => pw.length >= 8 },
+  { id: 'uppercase', label: 'At least 1 uppercase letter (A-Z)', test: (pw) => /[A-Z]/.test(pw) },
+  { id: 'number', label: 'At least 1 numeric digit (0-9)', test: (pw) => /\d/.test(pw) },
+  { id: 'special', label: 'At least 1 special character (!@#$%^&*…)', test: (pw) => /[^A-Za-z0-9]/.test(pw) },
+];
 
 export default function SignUpPage() {
   const { signUp } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: '', employeeId: '', email: '' });
+  const [form, setForm] = useState({ fullName: '', employeeId: '', email: '', password: '', confirmPassword: '', role: 'instructor' });
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touched, setTouched] = useState({});
-  const [isSuccess, setIsSuccess] = useState(false); // Track success state
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Real-time password rule validation
+  const passwordChecks = useMemo(() => {
+    return PASSWORD_RULES.map(rule => ({
+      ...rule,
+      passed: rule.test(form.password),
+    }));
+  }, [form.password]);
+
+  const allPasswordRulesPassed = passwordChecks.every(r => r.passed);
 
   const updateField = (field, value) => {
     const v = field === 'employeeId' ? value.toUpperCase() : value;
@@ -36,13 +55,31 @@ export default function SignUpPage() {
         break;
       case 'employeeId':
         if (!value.trim()) newErrors.employeeId = 'Employee ID is required';
-        else if (!EMPLOYEE_ID_REGEX.test(value)) newErrors.employeeId = 'Must match format I followed by 4 digits (e.g., I0001)';
+        else if (!EMPLOYEE_ID_REGEX.test(value)) newErrors.employeeId = 'Must match format NW followed by 7 digits (e.g., NW2000563)';
         else delete newErrors.employeeId;
         break;
       case 'email':
         if (!value.trim()) newErrors.email = 'Email is required';
         else if (!EMAIL_REGEX.test(value)) newErrors.email = 'Please enter a valid email address';
         else delete newErrors.email;
+        break;
+      case 'password':
+        if (!value) newErrors.password = 'Password is required';
+        else if (!PASSWORD_RULES.every(r => r.test(value))) newErrors.password = 'Password does not meet all requirements';
+        else delete newErrors.password;
+        // Re-validate confirm password if it was touched
+        if (touched.confirmPassword) {
+          if (form.confirmPassword && form.confirmPassword !== value) {
+            newErrors.confirmPassword = 'Passwords do not match';
+          } else if (form.confirmPassword === value) {
+            delete newErrors.confirmPassword;
+          }
+        }
+        break;
+      case 'confirmPassword':
+        if (!value) newErrors.confirmPassword = 'Please confirm your password';
+        else if (value !== form.password) newErrors.confirmPassword = 'Passwords do not match';
+        else delete newErrors.confirmPassword;
         break;
     }
     setErrors(newErrors);
@@ -61,7 +98,7 @@ export default function SignUpPage() {
     setSubmitError('');
 
     // Validate all fields
-    const allTouched = { fullName: true, employeeId: true, email: true };
+    const allTouched = { fullName: true, employeeId: true, email: true, password: true, confirmPassword: true };
     setTouched(allTouched);
     let allErrors = {};
     Object.keys(form).forEach(field => {
@@ -72,7 +109,7 @@ export default function SignUpPage() {
 
     setIsSubmitting(true);
     setTimeout(() => {
-      const result = signUp(form.fullName.trim(), form.employeeId.trim(), form.email.trim());
+      const result = signUp(form.fullName.trim(), form.employeeId.trim(), form.email.trim(), form.password, form.role);
       if (result.success) {
         setIsSuccess(true);
       } else {
@@ -139,11 +176,38 @@ export default function SignUpPage() {
               </Link>
 
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-text-primary">Request Instructor Access</h2>
+                <h2 className="text-2xl font-bold text-text-primary">Request Account Access</h2>
                 <p className="text-text-secondary mt-2">Register with your institute credentials</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Role Selection */}
+                <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
+                  <button
+                    type="button"
+                    onClick={() => updateField('role', 'instructor')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                      form.role === 'instructor' 
+                        ? 'bg-white text-primary-700 shadow-sm' 
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                    Instructor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateField('role', 'admin')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                      form.role === 'admin' 
+                        ? 'bg-white text-primary-700 shadow-sm' 
+                        : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </button>
+                </div>
                 {/* Full Name */}
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-semibold text-text-primary mb-2">
@@ -173,7 +237,7 @@ export default function SignUpPage() {
                 {/* Employee ID */}
                 <div>
                   <label htmlFor="employeeId" className="block text-sm font-semibold text-text-primary mb-2">
-                    Instructor ID
+                    Employee ID
                   </label>
                   <div className="relative">
                     <input
@@ -182,8 +246,8 @@ export default function SignUpPage() {
                       value={form.employeeId}
                       onChange={(e) => updateField('employeeId', e.target.value)}
                       onBlur={() => handleBlur('employeeId')}
-                      placeholder="e.g. I0001"
-                      maxLength={5}
+                      placeholder="e.g. NW2000563"
+                      maxLength={9}
                       className={`
                         w-full px-4 py-3 rounded-xl border text-sm font-mono tracking-wider
                         focus-ring placeholder:text-text-muted placeholder:font-sans placeholder:tracking-normal
@@ -200,7 +264,7 @@ export default function SignUpPage() {
                     {errors.employeeId && touched.employeeId ? (
                       <span className="flex items-center gap-1 animate-slide-down"><X className="w-3 h-3" />{errors.employeeId}</span>
                     ) : (
-                      <>Pattern: I followed by 4 digits (regex: <code className="bg-slate-100 px-1 rounded">{'I\\d{4}'}</code>)</>
+                      <>Pattern: NW followed by 7 digits (e.g., NW2000563)</>
                     )}
                   </p>
                 </div>
@@ -226,6 +290,106 @@ export default function SignUpPage() {
                   {errors.email && touched.email && (
                     <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 animate-slide-down">
                       <X className="w-3 h-3" />{errors.email}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-semibold text-text-primary mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(e) => updateField('password', e.target.value)}
+                      onBlur={() => handleBlur('password')}
+                      placeholder="Create a strong password"
+                      className={`
+                        w-full px-4 py-3 pr-12 rounded-xl border text-sm
+                        focus-ring placeholder:text-text-muted
+                        ${errors.password && touched.password ? 'border-rose-300 bg-rose-50/50' : 'border-slate-200 bg-white hover:border-primary-300'}
+                      `}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors p-1"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Password Rules Checklist */}
+                  <div className="mt-2.5 space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-xs font-semibold text-text-secondary mb-1">Password requirements:</p>
+                    {passwordChecks.map(rule => {
+                      const showError = touched.password && !rule.passed;
+                      const showSuccess = rule.passed && form.password.length > 0;
+                      return (
+                        <div
+                          key={rule.id}
+                          className={`flex items-center gap-2 text-xs transition-all duration-200 ${
+                            showSuccess
+                              ? 'text-emerald-600'
+                              : showError
+                                ? 'text-rose-600 font-medium'
+                                : 'text-text-muted'
+                          }`}
+                        >
+                          {showSuccess ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          ) : showError ? (
+                            <X className="w-3.5 h-3.5 text-rose-500 shrink-0 animate-shake" />
+                          ) : (
+                            <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" />
+                          )}
+                          <span>{rule.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-text-primary mb-2">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={form.confirmPassword}
+                      onChange={(e) => updateField('confirmPassword', e.target.value)}
+                      onBlur={() => handleBlur('confirmPassword')}
+                      placeholder="Re-enter your password"
+                      className={`
+                        w-full px-4 py-3 pr-12 rounded-xl border text-sm
+                        focus-ring placeholder:text-text-muted
+                        ${errors.confirmPassword && touched.confirmPassword ? 'border-rose-300 bg-rose-50/50' : 'border-slate-200 bg-white hover:border-primary-300'}
+                      `}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors p-1"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && touched.confirmPassword && (
+                    <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 animate-slide-down">
+                      <X className="w-3 h-3" />{errors.confirmPassword}
+                    </p>
+                  )}
+                  {!errors.confirmPassword && touched.confirmPassword && form.confirmPassword && (
+                    <p className="mt-1.5 text-xs text-emerald-600 flex items-center gap-1">
+                      <Check className="w-3 h-3" />Passwords match
                     </p>
                   )}
                 </div>

@@ -3,16 +3,18 @@ import { INSTRUCTORS } from '../data/mockData';
 
 const AuthContext = createContext(null);
 
-const EMPLOYEE_ID_REGEX = /^I\d{4}$/;
-const ADMIN_ID = 'A0000';
+const EMPLOYEE_ID_REGEX = /^NW\d{7}$/;
+const ADMIN_EMPLOYEE_ID = 'NW2000001'; // The pre-seeded admin
+const DEFAULT_PASSWORD = 'Welcome@1'; // Default password for pre-seeded demo users
 
 // Pre-seed registered users from mock instructors
 const INITIAL_USERS = INSTRUCTORS.map(inst => ({
   fullName: inst.name,
   employeeId: inst.employeeId,
   email: inst.email,
+  password: DEFAULT_PASSWORD,
   instructorId: inst.id,
-  role: inst.employeeId === ADMIN_ID ? 'admin' : 'instructor',
+  role: inst.employeeId === ADMIN_EMPLOYEE_ID ? 'admin' : 'instructor',
   status: 'approved', // Pre-seeded users are automatically approved
 }));
 
@@ -21,7 +23,30 @@ export function AuthProvider({ children }) {
   const [registeredUsers, setRegisteredUsers] = useState(() => {
     try {
       const stored = localStorage.getItem('worklog_users');
-      return stored ? JSON.parse(stored) : INITIAL_USERS;
+      const version = localStorage.getItem('worklog_users_version');
+      
+      // If version doesn't match, the ID format has changed — re-seed
+      if (version !== '2') {
+        localStorage.setItem('worklog_users_version', '2');
+        // If there was stored data, preserve any custom-added users (non pre-seeded ones)
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const preSeededIds = new Set(['A0000', 'I0001', 'I0002', 'I0003', 'I0004', 'I0005',
+            'NW2000001', 'NW2000563', 'NW2000128', 'NW2000347', 'NW2000891', 'NW2000045']);
+          const customUsers = parsed.filter(u => !preSeededIds.has(u.employeeId));
+          // Backfill password for custom users
+          const migratedCustom = customUsers.map(u => u.password ? u : { ...u, password: DEFAULT_PASSWORD });
+          return [...INITIAL_USERS, ...migratedCustom];
+        }
+        return INITIAL_USERS;
+      }
+
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Backfill password if missing
+        return parsed.map(u => u.password ? u : { ...u, password: DEFAULT_PASSWORD });
+      }
+      return INITIAL_USERS;
     } catch {
       return INITIAL_USERS;
     }
@@ -35,12 +60,12 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!currentUser;
 
   const validateEmployeeId = useCallback((employeeId) => {
-    return EMPLOYEE_ID_REGEX.test(employeeId) || employeeId === ADMIN_ID;
+    return EMPLOYEE_ID_REGEX.test(employeeId);
   }, []);
 
-  const signUp = useCallback((fullName, employeeId, email) => {
+  const signUp = useCallback((fullName, employeeId, email, password, requestedRole = 'instructor') => {
     if (!EMPLOYEE_ID_REGEX.test(employeeId)) {
-      return { success: false, error: 'Instructor ID must match format I followed by 4 digits (e.g., I0001)' };
+      return { success: false, error: 'Employee ID must match format NW followed by 7 digits (e.g., NW2000563)' };
     }
 
     const existing = registeredUsers.find(u => u.employeeId === employeeId);
@@ -57,8 +82,9 @@ export function AuthProvider({ children }) {
       fullName,
       employeeId,
       email,
+      password,
       instructorId: `inst-${Date.now()}`,
-      role: 'instructor',
+      role: requestedRole,
       status: 'pending', // New signups require approval
     };
 
@@ -67,14 +93,18 @@ export function AuthProvider({ children }) {
     return { success: true, user: newUser };
   }, [registeredUsers]);
 
-  const login = useCallback((employeeId) => {
+  const login = useCallback((employeeId, password) => {
     if (!validateEmployeeId(employeeId)) {
-      return { success: false, error: 'Invalid Employee ID format.' };
+      return { success: false, error: 'Invalid Employee ID format. Must be NW followed by 7 digits.' };
     }
 
     const user = registeredUsers.find(u => u.employeeId === employeeId);
     if (!user) {
       return { success: false, error: 'No account found with this Employee ID.' };
+    }
+
+    if (user.password !== password) {
+      return { success: false, error: 'Incorrect password. Please try again.' };
     }
 
     if (user.status === 'pending') {
@@ -105,6 +135,18 @@ export function AuthProvider({ children }) {
     ));
   }, []);
 
+  const promoteToAdmin = useCallback((employeeId) => {
+    setRegisteredUsers(prev => prev.map(u =>
+      u.employeeId === employeeId ? { ...u, role: 'admin' } : u
+    ));
+  }, []);
+
+  const demoteToInstructor = useCallback((employeeId) => {
+    setRegisteredUsers(prev => prev.map(u =>
+      u.employeeId === employeeId ? { ...u, role: 'instructor' } : u
+    ));
+  }, []);
+
   const value = {
     currentUser,
     isAuthenticated,
@@ -114,7 +156,9 @@ export function AuthProvider({ children }) {
     login,
     logout,
     approveUser,
-    rejectUser
+    rejectUser,
+    promoteToAdmin,
+    demoteToInstructor,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

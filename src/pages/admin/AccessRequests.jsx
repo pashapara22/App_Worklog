@@ -5,8 +5,8 @@ import { Check, X, Clock, ShieldAlert, UserPlus, ShieldCheck } from 'lucide-reac
 export default function AccessRequests() {
   const { registeredUsers, approveUser, rejectUser } = useAuth();
   
-  // Filter for pending users
-  const pendingUsers = registeredUsers.filter(u => u.status === 'pending');
+  // Filter for pending users (instructors only, admins are approved in Overview)
+  const pendingUsers = registeredUsers.filter(u => u.status === 'pending' && u.role === 'instructor');
   // Optional: show recently approved or rejected for history
   const historyUsers = registeredUsers.filter(u => u.status === 'approved' || u.status === 'rejected').filter(u => u.role !== 'admin');
 
