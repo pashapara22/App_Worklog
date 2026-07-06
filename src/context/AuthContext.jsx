@@ -57,6 +57,24 @@ export function AuthProvider({ children }) {
     localStorage.setItem('worklog_users', JSON.stringify(registeredUsers));
   }, [registeredUsers]);
 
+  // Sync users from localStorage if changed in another tab
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'worklog_users') {
+        try {
+          const stored = e.newValue;
+          if (stored) {
+            setRegisteredUsers(JSON.parse(stored));
+          }
+        } catch (err) {
+          console.error("Failed to parse worklog_users from storage event", err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const isAuthenticated = !!currentUser;
 
   const validateEmployeeId = useCallback((employeeId) => {
